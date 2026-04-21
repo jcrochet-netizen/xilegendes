@@ -235,7 +235,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* ═══════════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════════ */
-const SHARE_TEXT = "Voici mon XI de Légende ! Et toi, quel est le tien ? Compose ta team ici :";
+const SHARE_TEXT = "Voici mon 11 des légendes - Equipe de France 🇫🇷  Vous en pensez quoi ? Fais le tiens ici :";
 const SHARE_URL  = window.location.href;
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -483,6 +483,7 @@ function selectPlayer(pos, id) {
   }
   updateCounts();
   renderPitch();
+  renderStepper();
   checkValidate();
 
   if (state[pos].length === maxCount) {
