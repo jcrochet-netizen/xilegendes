@@ -605,8 +605,40 @@ function resetAll() {
 /* ═══════════════════════════════════════════════════════════════════
    IMAGE GENERATION & SHARE
    ═══════════════════════════════════════════════════════════════════ */
+function waitForImage(img) {
+  if (img.complete && img.naturalHeight > 0) return Promise.resolve();
+  return new Promise(res => {
+    img.addEventListener('load', res, { once: true });
+    img.addEventListener('error', res, { once: true });
+  });
+}
+
+async function fetchAsDataURL(url) {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
+}
+
 async function generateImage() {
   const pitchEl = document.getElementById("pitchContainer");
+
+  // Preload all images + convert logo to data URL (guarantees it appears in capture)
+  const imgs = Array.from(pitchEl.querySelectorAll('img'));
+  const logoImg = pitchEl.querySelector('.pitch-brand img');
+  const originalLogoSrc = logoImg ? logoImg.getAttribute('src') : null;
+
+  if (logoImg && originalLogoSrc && !originalLogoSrc.startsWith('data:')) {
+    try {
+      const dataUrl = await fetchAsDataURL(originalLogoSrc);
+      logoImg.src = dataUrl;
+    } catch (_) { /* fallback to original src */ }
+  }
+  await Promise.all(imgs.map(waitForImage));
+
   const canvas = await html2canvas(pitchEl, {
     backgroundColor: "#f5f5f5",
     scale: 2,
@@ -615,6 +647,7 @@ async function generateImage() {
     logging: false,
     imageTimeout: 15000
   });
+
   return new Promise((resolve, reject) => {
     try {
       canvas.toBlob(b => {
