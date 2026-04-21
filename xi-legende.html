@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XI de Légende — Top Mercato</title>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+/* ── Reset & Variables ──────────────────────────────────────────── */
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#ffffff;--card:#f5f5f5;--card-hover:#eaeaea;--card-selected:#fde8e8;
+  --gold:#e30613;--gold-light:#ff1a2a;--text:#1a1a1a;--text-muted:#777;
+  --pitch-green:#2d6a30;--pitch-dark:#1e5420;--pitch-line:rgba(255,255,255,.35);
+  --accent:#e30613;--radius:10px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.4}
+
+/* ── Widget Container ───────────────────────────────────────────── */
+#xi-widget{display:flex;gap:24px;width:100%;max-width:1100px;margin:0 auto;padding:20px;min-height:100vh;align-items:flex-start}
+.selector-panel{flex:1;min-width:0}
+.pitch-panel{width:340px;flex-shrink:0;position:sticky;top:20px}
+
+/* ── Header ─────────────────────────────────────────────────────── */
+.widget-header{text-align:center;margin-bottom:24px}
+.widget-header h1{font-size:1.6rem;color:var(--gold);margin-bottom:4px;letter-spacing:1px}
+.widget-header .brand{font-size:.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:2px}
+
+/* ── Stepper ────────────────────────────────────────────────────── */
+.stepper{display:flex;gap:4px;margin-bottom:24px;overflow-x:auto;padding-bottom:4px}
+.stepper-item{flex:1;text-align:center;padding:8px 4px;font-size:.7rem;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted);background:var(--card);border-radius:6px;cursor:pointer;transition:all .2s;white-space:nowrap;min-width:60px;position:relative}
+.stepper-item.active{background:var(--gold);color:#fff}
+.stepper-item.done{background:#d4edda;color:#1e7e34}
+.stepper-item:hover:not(.active){background:var(--card-hover)}
+.stepper-badge{display:block;font-size:.6rem;font-weight:400;margin-top:2px;opacity:.8}
+.stepper-item.active .stepper-badge{color:rgba(255,255,255,.85)}
+.stepper-check{display:inline-block;width:16px;height:16px;line-height:16px;border-radius:50%;background:#1e7e34;color:#fff;font-size:.55rem;margin-top:5px;text-align:center}
+.stepper-item.active .stepper-check{background:#fff;color:var(--gold)}
+
+/* ── Steps ──────────────────────────────────────────────────────── */
+.step{display:none}
+.step.visible{display:block}
+.step h3{font-size:1.05rem;margin-bottom:14px;color:var(--text)}
+.step h3 .count{color:var(--gold);font-weight:400;font-size:.9rem}
+
+/* ── Formation Pills ────────────────────────────────────────────── */
+.formation-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.formation-pill{background:var(--card);border:2px solid transparent;border-radius:var(--radius);padding:16px 10px;text-align:center;cursor:pointer;transition:all .2s;font-weight:700;font-size:1.1rem;color:var(--text)}
+.formation-pill:hover{border-color:var(--gold);background:var(--card-hover)}
+.formation-pill.selected{border-color:var(--gold);background:var(--card-selected);color:var(--gold)}
+.formation-pill .desc{font-size:.65rem;font-weight:400;color:var(--text-muted);margin-top:4px}
+
+/* ── Player Cards Grid ──────────────────────────────────────────── */
+.player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.player-card{display:flex;align-items:center;gap:8px;background:var(--card);border:2px solid transparent;border-radius:var(--radius);padding:8px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.player-card:hover{border-color:var(--gold);background:var(--card-hover)}
+.player-card.selected{border-color:var(--gold);background:var(--card-selected)}
+.player-card.disabled{opacity:.35;pointer-events:none}
+.player-card .photo{width:48px;height:48px;border-radius:8px;object-fit:cover;background:#ddd;flex-shrink:0}
+.player-card .info{min-width:0}
+.player-card .name{font-size:.85rem;font-weight:600;line-height:1.3}
+.player-card .name span{display:block;white-space:nowrap}
+.player-card .check{position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:var(--gold);color:#fff;display:none;align-items:center;justify-content:center;font-size:.7rem;font-weight:700}
+.player-card.selected .check{display:flex}
+.player-card .dual-badge{position:absolute;bottom:4px;right:4px;background:linear-gradient(135deg,#e30613,#b8050f);color:#fff;font-size:.5rem;font-weight:700;padding:2px 5px;border-radius:4px;letter-spacing:.3px;text-transform:uppercase;line-height:1.2}
+
+/* ── Validate Button ────────────────────────────────────────────── */
+.validate-btn{display:block;width:100%;margin-top:24px;padding:16px;background:var(--gold);color:#fff;border:none;border-radius:var(--radius);font-size:1rem;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all .2s;opacity:.4;pointer-events:none}
+.validate-btn.ready{opacity:1;pointer-events:auto}
+.validate-btn.ready:hover{background:var(--gold-light);transform:translateY(-1px)}
+
+/* ── Reset Button ───────────────────────────────────────────────── */
+.reset-btn{display:block;width:100%;margin-top:10px;padding:10px;background:transparent;color:var(--text-muted);border:1px solid #ccc;border-radius:var(--radius);font-size:.8rem;cursor:pointer;transition:all .2s}
+.reset-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ── Pitch ──────────────────────────────────────────────────────── */
+.pitch-container{background:var(--card);border-radius:12px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,.12)}
+.pitch-title{text-align:center;font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px}
+.pitch{position:relative;width:100%;padding-bottom:140%;background:linear-gradient(180deg,var(--pitch-dark) 0%,var(--pitch-green) 30%,var(--pitch-green) 70%,var(--pitch-dark) 100%);border-radius:8px;overflow:hidden;border:2px solid var(--pitch-line)}
+
+/* Pitch lines */
+.pitch-lines{position:absolute;inset:0}
+.pitch-lines .halfway{position:absolute;top:50%;left:5%;right:5%;height:0;border-top:2px solid var(--pitch-line)}
+.pitch-lines .center-circle{position:absolute;top:50%;left:50%;width:22%;padding-bottom:22%;border-radius:50%;border:2px solid var(--pitch-line);transform:translate(-50%,-50%)}
+.pitch-lines .center-dot{position:absolute;top:50%;left:50%;width:6px;height:6px;border-radius:50%;background:var(--pitch-line);transform:translate(-50%,-50%)}
+/* Penalty areas */
+.pitch-lines .box-top{position:absolute;top:0;left:20%;right:20%;height:18%;border:2px solid var(--pitch-line);border-top:none}
+.pitch-lines .box-top-small{position:absolute;top:0;left:32%;right:32%;height:8%;border:2px solid var(--pitch-line);border-top:none}
+.pitch-lines .box-bottom{position:absolute;bottom:0;left:20%;right:20%;height:18%;border:2px solid var(--pitch-line);border-bottom:none}
+.pitch-lines .box-bottom-small{position:absolute;bottom:0;left:32%;right:32%;height:8%;border:2px solid var(--pitch-line);border-bottom:none}
+/* Corner arcs */
+.pitch-lines .corner-tl,.pitch-lines .corner-tr,.pitch-lines .corner-bl,.pitch-lines .corner-br{position:absolute;width:4%;padding-bottom:4%;border-radius:50%;border:2px solid var(--pitch-line)}
+.pitch-lines .corner-tl{top:-2%;left:-2%}.pitch-lines .corner-tr{top:-2%;right:-2%}.pitch-lines .corner-bl{bottom:-2%;left:-2%}.pitch-lines .corner-br{bottom:-2%;right:-2%}
+
+/* Player dots on pitch */
+.pitch-dot{position:absolute;transform:translate(-50%,-50%);text-align:center;width:72px;transition:all .4s ease}
+.pitch-dot .dot-photo{width:54px;height:54px;border-radius:50%;border:2px solid #fff;object-fit:cover;background:#ddd;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.pitch-dot .dot-name{font-size:.65rem;font-weight:600;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9);margin-top:3px;white-space:nowrap;max-width:86px;overflow:hidden;text-overflow:ellipsis}
+/* Empty slot */
+.pitch-dot.empty .dot-photo{border:2px dashed rgba(255,255,255,.4);background:rgba(255,255,255,.08)}
+.pitch-dot.empty .dot-name{color:rgba(255,255,255,.4)}
+
+/* Coach area */
+.coach-area{text-align:center;padding:12px 0 4px;min-height:60px}
+.coach-area .coach-dot{display:inline-flex;flex-direction:column;align-items:center}
+.coach-area .dot-photo{width:40px;height:40px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;background:#ddd}
+.coach-area .dot-name{font-size:.65rem;color:var(--gold);margin-top:4px;font-weight:600}
+.coach-area .empty-coach{font-size:.7rem;color:var(--text-muted);font-style:italic}
+
+.pitch-brand{text-align:center;padding:10px 0 0}
+.pitch-brand img{height:22px;width:auto}
+
+/* ── Share Section ──────────────────────────────────────────────── */
+.share-section{margin-top:16px;display:flex;flex-direction:column;gap:10px}
+.share-hint{text-align:center;font-size:.75rem;color:var(--text-muted);font-style:italic;padding:4px 0}
+.share-hint.hidden{display:none}
+.share-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.share-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 8px;border:none;border-radius:var(--radius);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;color:#fff}
+.share-btn:not(:disabled):hover{opacity:.9;transform:translateY(-1px)}
+.share-btn:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+.share-btn.x{background:#000;border:1px solid #000}.share-btn.fb{background:#1877f2}
+.share-btn.wa{background:#25d366}.share-btn.ig{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)}
+.share-btn.dl{background:var(--gold);color:#fff;width:100%;padding:14px;font-size:.9rem}
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media(max-width:900px){
+  #xi-widget{flex-direction:column-reverse;padding:12px}
+  .pitch-panel{width:100%;position:static;margin-bottom:16px}
+  .pitch{padding-bottom:120%}
+  .player-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
+}
+@media(max-width:600px){
+  .player-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+  .player-card{padding:8px;gap:8px}
+  .player-card .photo{width:36px;height:36px}
+  .player-card .name{font-size:.7rem}
+  .formation-grid{grid-template-columns:repeat(3,1fr)}
+  .widget-header h1{font-size:1.3rem}
+}
+@media(max-width:400px){
+  #xi-widget{padding:8px}
+  .stepper-item{font-size:.55rem;padding:6px 2px;min-width:50px}
+  .player-grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px}
+  .player-card .photo{width:32px;height:32px}
+}
+</style>
+</head>
+<body>
+
+<div id="xi-widget">
+  <!-- ═══ LEFT: SELECTOR PANEL ═══ -->
+  <div class="selector-panel">
+    <div class="widget-header">
+      <h1>⚽ Mon XI de Légende - 🇫🇷 Equipe de France</h1>
+      <div class="brand"><img src="https://media.topmercato.com/main/2026/03/TM_1200px_black.png" alt="Top Mercato" style="height:20px;width:auto;margin-top:4px"></div>
+    </div>
+
+    <p style="text-align:center;font-size:.85rem;color:var(--text);margin-bottom:20px;line-height:1.5;max-width:600px;margin-left:auto;margin-right:auto">Sélectionne d'abord le schéma tactique, puis choisis le nombre de joueurs nécessaire par ligne (gardien, défenseurs, milieux et attaquants), et valide ta composition pour la partager.</p>
+
+    <!-- Stepper -->
+    <div class="stepper" id="stepper"></div>
+
+    <!-- Step: Formation -->
+    <div class="step visible" id="step-formation">
+      <h3>Choisis ta formation</h3>
+      <div class="formation-grid" id="formationGrid"></div>
+    </div>
+
+    <!-- Step: GK -->
+    <div class="step" id="step-gk">
+      <h3>Gardien <span class="count" id="countGk">(0/1)</span></h3>
+      <div class="player-grid" id="gridGk"></div>
+    </div>
+
+    <!-- Step: DEF -->
+    <div class="step" id="step-def">
+      <h3>Défenseurs <span class="count" id="countDef">(0/4)</span></h3>
+      <div class="player-grid" id="gridDef"></div>
+    </div>
+
+    <!-- Step: MID -->
+    <div class="step" id="step-mid">
+      <h3>Milieux <span class="count" id="countMid">(0/4)</span></h3>
+      <div class="player-grid" id="gridMid"></div>
+    </div>
+
+    <!-- Step: ATT -->
+    <div class="step" id="step-att">
+      <h3>Attaquants <span class="count" id="countAtt">(0/2)</span></h3>
+      <div class="player-grid" id="gridAtt"></div>
+    </div>
+
+    <button class="reset-btn" onclick="resetAll()">↺ Recommencer</button>
+  </div>
+
+  <!-- ═══ RIGHT: PITCH PANEL (Sticky) ═══ -->
+  <div class="pitch-panel">
+    <div class="pitch-container" id="pitchContainer">
+      <div class="pitch-title">Voici mon 11 de légendes !<br>🇫🇷 Équipe de France</div>
+      <div class="pitch" id="pitch">
+        <div class="pitch-lines">
+          <div class="halfway"></div>
+          <div class="center-circle"></div>
+          <div class="center-dot"></div>
+          <div class="box-top"></div>
+          <div class="box-top-small"></div>
+          <div class="box-bottom"></div>
+          <div class="box-bottom-small"></div>
+          <div class="corner-tl"></div>
+          <div class="corner-tr"></div>
+          <div class="corner-bl"></div>
+          <div class="corner-br"></div>
+        </div>
+        <div id="pitchPlayers"></div>
+      </div>
+      <div class="pitch-brand"><img src="https://media.topmercato.com/main/2026/03/TM_1200px_red.png" alt="Top Mercato"></div>
+    </div>
+
+    <!-- ═══ SHARE SECTION ═══ -->
+    <div class="share-section">
+      <div class="share-hint" id="shareHint">Termine ta compo pour partager</div>
+      <button class="share-btn dl" onclick="downloadImage()" id="btnDownload" disabled>📥 Télécharger l'image</button>
+      <div class="share-buttons">
+        <button class="share-btn x" onclick="shareOn('x')" id="btnX" disabled>𝕏 Partager</button>
+        <button class="share-btn fb" onclick="shareOn('facebook')" id="btnFb" disabled>Facebook</button>
+        <button class="share-btn wa" onclick="shareOn('whatsapp')" id="btnWa" disabled>WhatsApp</button>
+        <button class="share-btn ig" onclick="shareOn('instagram')" id="btnIg" disabled>Instagram</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   CONFIG
+   ═══════════════════════════════════════════════════════════════════ */
+const SHARE_TEXT = "Voici mon XI de Légende ! Et toi, quel est le tien ? Compose ta team ici :";
+const SHARE_URL  = window.location.href;
+
+/* ═══════════════════════════════════════════════════════════════════
+   PLAYER DATA (replace photo URLs with real images)
+   ═══════════════════════════════════════════════════════════════════ */
+const PLAYERS = {
+  gk: [
+    { id: 1,  name: "Claude Abbes",       photo: "france/abbes.jpg" },
+    { id: 2,  name: "Fabien Barthez",     photo: "france/barthez.jpg" },
+    { id: 3,  name: "Joël Bats",          photo: "france/bats.jpg" },
+    { id: 6,  name: "Jean-Luc Ettori",    photo: "france/ettori.jpg" },
+    { id: 8,  name: "Hugo Lloris",        photo: "france/lloris.jpg" },
+    { id: 9,  name: "Mike Maignan",       photo: "france/maignan.jpg" },
+  ],
+  def: [
+    { id: 20, name: "Éric Abidal",        photo: "france/abidal.jpg" },
+    { id: 21, name: "Manuel Amoros",      photo: "france/amoros.jpg" },
+    { id: 23, name: "Patrick Battiston",  photo: "france/battiston.jpg" },
+    { id: 24, name: "Laurent Blanc",      photo: "france/blanc.jpg" },
+    { id: 25, name: "Maxime Bossis",      photo: "france/bossis.jpg" },
+    { id: 27, name: "Marcel Desailly",    photo: "france/desailly.jpg" },
+    { id: 28, name: "Patrice Evra",       photo: "france/evra.jpg" },
+    { id: 30, name: "Gérard Janvion",     photo: "france/janvion.jpg" },
+    { id: 34, name: "Bixente Lizarazu",   photo: "france/lizarazu.jpg" },
+    { id: 38, name: "Willy Sagnol",       photo: "france/sagnol.jpg" },
+    { id: 39, name: "Lilian Thuram",      photo: "france/thuram.jpg" },
+    { id: 40, name: "Marius Trésor",      photo: "france/tresor.jpg" },
+    { id: 42, name: "Raphaël Varane",     photo: "france/varane.jpg" },
+  ],
+  mid: [
+    { id: 50,  name: "Didier Deschamps",  photo: "france/deschamps.jpg" },
+    { id: 51,  name: "Luis Fernandez",    photo: "france/fernandez.jpg" },
+    { id: 101, name: "Bernard Genghini",  photo: "france/genghini.jpg",  dualKey: "genghini" },
+    { id: 53,  name: "Alain Giresse",     photo: "france/giresse.jpg" },
+    { id: 103, name: "Antoine Griezmann", photo: "france/griezmann.jpg", dualKey: "griezmann" },
+    { id: 54,  name: "N'Golo Kanté",      photo: "france/kante.jpg" },
+    { id: 104, name: "Raymond Kopa",      photo: "france/kopa.jpg",      dualKey: "kopa" },
+    { id: 55,  name: "Claude Makélélé",   photo: "france/makelele.jpg" },
+    { id: 56,  name: "Emmanuel Petit",    photo: "france/petit.jpg" },
+    { id: 105, name: "Robert Pirès",      photo: "france/pires.jpg",     dualKey: "pires" },
+    { id: 106, name: "Michel Platini",    photo: "france/platini.jpg",   dualKey: "platini" },
+    { id: 107, name: "Franck Ribéry",     photo: "france/ribery.jpg",    dualKey: "ribery" },
+    { id: 57,  name: "Jean Tigana",       photo: "france/tigana.jpg" },
+    { id: 58,  name: "Patrick Vieira",    photo: "france/vieira.jpg" },
+    { id: 108, name: "Zinedine Zidane",   photo: "france/zidane.jpg",    dualKey: "zidane" },
+  ],
+  att: [
+    { id: 70,  name: "Karim Benzema",       photo: "france/benzema.jpg" },
+    { id: 73,  name: "Youri Djorkaeff",     photo: "france/djorkaeff.jpg" },
+    { id: 74,  name: "Just Fontaine",       photo: "france/fontaine.jpg" },
+    { id: 151, name: "Bernard Genghini",    photo: "france/genghini.jpg",  dualKey: "genghini" },
+    { id: 153, name: "Antoine Griezmann",   photo: "france/griezmann.jpg", dualKey: "griezmann" },
+    { id: 75,  name: "Thierry Henry",       photo: "france/henry.jpg" },
+    { id: 154, name: "Raymond Kopa",        photo: "france/kopa.jpg",      dualKey: "kopa" },
+    { id: 77,  name: "Kylian Mbappé",       photo: "france/mbappe.jpg" },
+    { id: 78,  name: "Jean Nicolas",        photo: "france/nicolas.jpg" },
+    { id: 79,  name: "Jean-Pierre Papin",   photo: "france/papin.jpg" },
+    { id: 80,  name: "Roger Piantoni",      photo: "france/piantoni.jpg" },
+    { id: 155, name: "Robert Pirès",        photo: "france/pires.jpg",     dualKey: "pires" },
+    { id: 156, name: "Michel Platini",      photo: "france/platini.jpg",   dualKey: "platini" },
+    { id: 157, name: "Franck Ribéry",       photo: "france/ribery.jpg",    dualKey: "ribery" },
+    { id: 81,  name: "Dominique Rocheteau", photo: "france/rocheteau.jpg" },
+    { id: 84,  name: "David Trezeguet",     photo: "france/trezeguet.jpg" },
+    { id: 158, name: "Zinedine Zidane",     photo: "france/zidane.jpg",    dualKey: "zidane" },
+  ]
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   FORMATIONS — positions as % (x, y) on the pitch
+   ═══════════════════════════════════════════════════════════════════ */
+const FORMATIONS = {
+  "4-4-2": {
+    def: 4, mid: 4, att: 2,
+    positions: {
+      gk:  [{ x:50, y:92 }],
+      def: [{ x:15, y:74 },{ x:38, y:74 },{ x:62, y:74 },{ x:85, y:74 }],
+      mid: [{ x:15, y:50 },{ x:38, y:50 },{ x:62, y:50 },{ x:85, y:50 }],
+      att: [{ x:35, y:24 },{ x:65, y:24 }]
+    }
+  },
+  "4-3-3": {
+    def: 4, mid: 3, att: 3,
+    positions: {
+      gk:  [{ x:50, y:92 }],
+      def: [{ x:15, y:74 },{ x:38, y:74 },{ x:62, y:74 },{ x:85, y:74 }],
+      mid: [{ x:25, y:50 },{ x:50, y:50 },{ x:75, y:50 }],
+      att: [{ x:20, y:24 },{ x:50, y:20 },{ x:80, y:24 }]
+    }
+  },
+  "4-2-3-1": {
+    def: 4, mid: 5, att: 1,
+    positions: {
+      gk:  [{ x:50, y:92 }],
+      def: [{ x:15, y:76 },{ x:38, y:76 },{ x:62, y:76 },{ x:85, y:76 }],
+      mid: [{ x:35, y:58 },{ x:65, y:58 },{ x:20, y:40 },{ x:50, y:38 },{ x:80, y:40 }],
+      att: [{ x:50, y:20 }]
+    }
+  },
+  "3-5-2": {
+    def: 3, mid: 5, att: 2,
+    positions: {
+      gk:  [{ x:50, y:92 }],
+      def: [{ x:25, y:74 },{ x:50, y:74 },{ x:75, y:74 }],
+      mid: [{ x:10, y:50 },{ x:30, y:50 },{ x:50, y:46 },{ x:70, y:50 },{ x:90, y:50 }],
+      att: [{ x:35, y:22 },{ x:65, y:22 }]
+    }
+  },
+  "3-4-2-1": {
+    def: 3, mid: 6, att: 1,
+    positions: {
+      gk:  [{ x:50, y:92 }],
+      def: [{ x:25, y:76 },{ x:50, y:76 },{ x:75, y:76 }],
+      mid: [{ x:12, y:56 },{ x:38, y:56 },{ x:62, y:56 },{ x:88, y:56 },{ x:33, y:36 },{ x:67, y:36 }],
+      att: [{ x:50, y:18 }]
+    }
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════════════════ */
+const STEPS = ["formation","gk","def","mid","att"];
+const STEP_LABELS = ["Formation","Gardien","Défenseurs","Milieux","Attaquants"];
+
+const state = {
+  formation: null,
+  gk: [],
+  def: [],
+  mid: [],
+  att: [],
+  currentStep: "formation"
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════════════════ */
+function init() {
+  renderStepper();
+  renderFormationPills();
+  renderPlayerGrid("gk", PLAYERS.gk);
+  renderPlayerGrid("def", PLAYERS.def);
+  renderPlayerGrid("mid", PLAYERS.mid);
+  renderPlayerGrid("att", PLAYERS.att);
+  renderPitch();
+}
+
+/* ── Stepper ─────────────────────────────────────────────── */
+function renderStepper() {
+  const el = document.getElementById("stepper");
+  el.innerHTML = STEPS.map((s, i) => {
+    const done = isStepDone(s);
+    const cls = s === state.currentStep ? "active" : done ? "done" : "";
+    let badge = "";
+    if (done) {
+      badge = '&nbsp;&nbsp;<span class="stepper-check">✓</span>';
+    } else if (s !== "formation" && state.formation) {
+      const need = s === "gk" ? 1 : getMaxForPosition(s);
+      badge = `<div class="stepper-badge">${state[s].length}/${need}</div>`;
+    }
+    return `<div class="stepper-item ${cls}" onclick="goToStep('${s}')">${STEP_LABELS[i]}${badge}</div>`;
+  }).join("");
+}
+
+function isStepDone(step) {
+  if (step === "formation") return !!state.formation;
+  if (!state.formation) return false;
+  const f = FORMATIONS[state.formation];
+  const need = step === "gk" ? 1 : (step === "def" ? f.def : step === "mid" ? f.mid : f.att);
+  return state[step].length === need;
+}
+
+function goToStep(step) {
+  if (step !== "formation" && !state.formation) return;
+  state.currentStep = step;
+  STEPS.forEach(s => {
+    document.getElementById("step-" + s).classList.toggle("visible", s === step);
+  });
+  renderStepper();
+}
+
+function nextStep() {
+  const idx = STEPS.indexOf(state.currentStep);
+  if (idx < STEPS.length - 1) goToStep(STEPS[idx + 1]);
+  checkValidate();
+}
+
+/* ── Formation Pills ─────────────────────────────────────── */
+function renderFormationPills() {
+  const grid = document.getElementById("formationGrid");
+  grid.innerHTML = Object.keys(FORMATIONS).map(key =>
+    `<div class="formation-pill ${state.formation===key?'selected':''}" onclick="selectFormation('${key}')">
+      ${key}
+    </div>`
+  ).join("");
+}
+
+function selectFormation(key) {
+  state.formation = key;
+  state.gk = []; state.def = []; state.mid = []; state.att = [];
+  renderFormationPills();
+  updateCounts();
+  updateAllGrids();
+  renderPitch();
+  checkValidate();
+  nextStep();
+}
+
+/* ── Player Grids ────────────────────────────────────────── */
+function renderPlayerGrid(pos, players) {
+  const grid = document.getElementById("grid" + pos.charAt(0).toUpperCase() + pos.slice(1));
+  grid.innerHTML = players.map(p => {
+    const dualBadge = p.dualKey ? '<div class="dual-badge">MIL / ATT</div>' : '';
+    const parts = p.name.split(' ');
+    const lastName = parts.pop();
+    const firstName = parts.join(' ');
+    return `<div class="player-card" data-id="${p.id}" onclick="selectPlayer('${pos}',${p.id})">
+      <img class="photo" src="${p.photo}" alt="${p.name}" loading="lazy">
+      <div class="info"><div class="name"><span>${firstName}</span><span>${lastName}</span></div></div>
+      <div class="check">✓</div>
+      ${dualBadge}
+    </div>`;
+  }).join("");
+}
+
+function selectPlayer(pos, id) {
+  const pool = PLAYERS[pos];
+  const player = pool.find(p => p.id === id);
+  if (!player) return;
+
+  const maxCount = pos === "gk" ? 1 : getMaxForPosition(pos);
+  const idx = state[pos].findIndex(p => p.id === id);
+
+  if (idx >= 0) {
+    state[pos].splice(idx, 1);
+  } else {
+    if (state[pos].length >= maxCount) return;
+    state[pos].push(player);
+  }
+
+  updateGridSelection(pos);
+  // Sync dual players across mid/att
+  if (player.dualKey) {
+    const otherPos = pos === "mid" ? "att" : pos === "att" ? "mid" : null;
+    if (otherPos) updateGridSelection(otherPos);
+  }
+  updateCounts();
+  renderPitch();
+  checkValidate();
+
+  if (state[pos].length === maxCount) {
+    setTimeout(() => nextStep(), 200);
+  }
+}
+
+function getMaxForPosition(pos) {
+  if (!state.formation) return 0;
+  const f = FORMATIONS[state.formation];
+  if (pos === "gk") return 1;
+  if (pos === "def") return f.def;
+  if (pos === "mid") return f.mid;
+  if (pos === "att") return f.att;
+  return 0;
+}
+
+function updateGridSelection(pos) {
+  const gridId = "grid" + pos.charAt(0).toUpperCase() + pos.slice(1);
+  const grid = document.getElementById(gridId);
+  const max = pos === "gk" ? 1 : getMaxForPosition(pos);
+  const full = state[pos].length >= max;
+
+  // Get dualKeys selected in the OTHER position (mid↔att)
+  const otherPos = pos === "mid" ? "att" : pos === "att" ? "mid" : null;
+  const otherDualKeys = otherPos ? state[otherPos].filter(p => p.dualKey).map(p => p.dualKey) : [];
+
+  grid.querySelectorAll(".player-card").forEach(card => {
+    const id = parseInt(card.dataset.id);
+    const player = PLAYERS[pos] ? PLAYERS[pos].find(p => p.id === id) : null;
+    const isSelected = state[pos].some(p => p.id === id);
+    const isDualLocked = player && player.dualKey ? otherDualKeys.includes(player.dualKey) : false;
+    card.classList.toggle("selected", isSelected);
+    card.classList.toggle("disabled", (full && !isSelected) || isDualLocked);
+  });
+}
+
+function updateAllGrids() {
+  ["gk","def","mid","att"].forEach(pos => updateGridSelection(pos));
+}
+
+function updateCounts() {
+  if (!state.formation) return;
+  const f = FORMATIONS[state.formation];
+  document.getElementById("countGk").textContent = `(${state.gk.length}/1)`;
+  document.getElementById("countDef").textContent = `(${state.def.length}/${f.def})`;
+  document.getElementById("countMid").textContent = `(${state.mid.length}/${f.mid})`;
+  document.getElementById("countAtt").textContent = `(${state.att.length}/${f.att})`;
+  // Update step titles
+  document.querySelector("#step-def h3").innerHTML = `Défenseurs <span class="count" id="countDef">(${state.def.length}/${f.def})</span>`;
+  document.querySelector("#step-mid h3").innerHTML = `Milieux <span class="count" id="countMid">(${state.mid.length}/${f.mid})</span>`;
+  document.querySelector("#step-att h3").innerHTML = `Attaquants <span class="count" id="countAtt">(${state.att.length}/${f.att})</span>`;
+}
+
+/* ── Pitch Rendering ─────────────────────────────────────── */
+function renderPitch() {
+  const container = document.getElementById("pitchPlayers");
+
+  if (!state.formation) {
+    container.innerHTML = "";
+    return;
+  }
+
+  const f = FORMATIONS[state.formation];
+  let html = "";
+
+  const posMap = [
+    { key: "gk",  slots: f.positions.gk },
+    { key: "def", slots: f.positions.def },
+    { key: "mid", slots: f.positions.mid },
+    { key: "att", slots: f.positions.att },
+  ];
+
+  for (const { key, slots } of posMap) {
+    slots.forEach((pos, i) => {
+      const player = state[key][i] || null;
+      const cls = player ? "" : "empty";
+      const photo = player ? player.photo : "";
+      const name = player ? player.name.split(" ").pop() : posLabel(key);
+      html += `<div class="pitch-dot ${cls}" style="left:${pos.x}%;top:${pos.y}%">
+        <img class="dot-photo" src="${photo}" alt="${name}" onerror="this.style.background='#ddd'">
+        <div class="dot-name">${name}</div>
+      </div>`;
+    });
+  }
+
+  container.innerHTML = html;
+}
+
+function posLabel(key) {
+  return { gk:"GK", def:"DEF", mid:"MIL", att:"ATT" }[key] || "";
+}
+
+/* ── Validation ──────────────────────────────────────────── */
+function checkValidate() {
+  const ready = state.formation
+    && state.gk.length === 1
+    && state.def.length === FORMATIONS[state.formation].def
+    && state.mid.length === FORMATIONS[state.formation].mid
+    && state.att.length === FORMATIONS[state.formation].att;
+  ["btnDownload","btnX","btnFb","btnWa","btnIg"].forEach(id => {
+    document.getElementById(id).disabled = !ready;
+  });
+  document.getElementById("shareHint").classList.toggle("hidden", ready);
+}
+
+/* ── Reset ───────────────────────────────────────────────── */
+function resetAll() {
+  state.formation = null;
+  state.gk = []; state.def = []; state.mid = []; state.att = [];
+  state.currentStep = "formation";
+  renderFormationPills();
+  updateAllGrids();
+  renderPitch();
+  renderStepper();
+  checkValidate();
+  goToStep("formation");
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   IMAGE GENERATION & SHARE
+   ═══════════════════════════════════════════════════════════════════ */
+async function generateImage() {
+  const pitchEl = document.getElementById("pitchContainer");
+  const canvas = await html2canvas(pitchEl, {
+    backgroundColor: "#f5f5f5",
+    scale: 2,
+    useCORS: true,
+    allowTaint: true,
+    logging: false,
+    imageTimeout: 15000
+  });
+  return new Promise((resolve, reject) => {
+    try {
+      canvas.toBlob(b => {
+        if (b) resolve(b);
+        else reject(new Error("Canvas non exportable (images cross-origin sans CORS)."));
+      }, "image/png");
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+async function downloadImage() {
+  try {
+    const blob = await generateImage();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "mon-xi-de-legende-top-mercato.png";
+    a.click();
+  } catch (e) {
+    console.error("html2canvas error:", e);
+    const msg = (location.protocol === "file:")
+      ? "Les images locales ne peuvent pas être capturées en ouverture directe (file://). Lance un serveur local (ex: python3 -m http.server) ou teste sur WordPress."
+      : "Erreur : " + (e.message || e);
+    alert(msg);
+  }
+}
+
+function shareOn(platform) {
+  const text = encodeURIComponent(SHARE_TEXT);
+  const url = encodeURIComponent(SHARE_URL);
+  const urls = {
+    x: `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`,
+    whatsapp: `https://wa.me/?text=${text}%20${url}`
+  };
+  if (platform === "instagram") {
+    downloadImage();
+    alert("Image téléchargée ! Partage-la directement sur Instagram.");
+    return;
+  }
+  if (urls[platform]) window.open(urls[platform], "_blank", "width=600,height=400");
+}
+
+/* ── Start ── */
+init();
+</script>
+</body>
+</html>
