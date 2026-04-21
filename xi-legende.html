@@ -96,6 +96,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .pitch-dot{position:absolute;transform:translate(-50%,-50%);text-align:center;width:72px;transition:all .4s ease}
 .pitch-dot .dot-photo{width:54px;height:54px;border-radius:50%;border:2px solid #fff;object-fit:cover;background:#ddd;box-shadow:0 2px 8px rgba(0,0,0,.5)}
 .pitch-dot .dot-name{font-size:.65rem;font-weight:600;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9);margin-top:3px;white-space:nowrap;max-width:86px;overflow:hidden;text-overflow:ellipsis}
+.pitch-dot[data-pos="gk"] .dot-name{margin-top:-2px}
 /* Empty slot */
 .pitch-dot.empty .dot-photo{border:2px dashed rgba(255,255,255,.4);background:rgba(255,255,255,.08)}
 .pitch-dot.empty .dot-name{color:rgba(255,255,255,.4)}
@@ -152,7 +153,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="selector-panel">
     <div class="widget-header">
       <h1>⚽ Mon XI de Légende - 🇫🇷 Equipe de France</h1>
-      <div class="brand"><img src="https://media.topmercato.com/main/2026/03/TM_1200px_black.png" alt="Top Mercato" style="height:20px;width:auto;margin-top:4px"></div>
+      <div class="brand"><img src="tm-logo-black.png" alt="Top Mercato" style="height:20px;width:auto;margin-top:4px"></div>
     </div>
 
     <p style="text-align:center;font-size:.85rem;color:var(--text);margin-bottom:20px;line-height:1.5;max-width:600px;margin-left:auto;margin-right:auto">Sélectionne d'abord le schéma tactique, puis choisis le nombre de joueurs nécessaire par ligne (gardien, défenseurs, milieux et attaquants), et valide ta composition pour la partager.</p>
@@ -213,7 +214,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </div>
         <div id="pitchPlayers"></div>
       </div>
-      <div class="pitch-brand"><img src="https://media.topmercato.com/main/2026/03/TM_1200px_red.png" alt="Top Mercato"></div>
+      <div class="pitch-brand"><img src="tm-logo-red.png" alt="Top Mercato"></div>
     </div>
 
     <!-- ═══ SHARE SECTION ═══ -->
@@ -561,7 +562,7 @@ function renderPitch() {
       const cls = player ? "" : "empty";
       const photo = player ? player.photo : "";
       const name = player ? player.name.split(" ").pop() : posLabel(key);
-      html += `<div class="pitch-dot ${cls}" style="left:${pos.x}%;top:${pos.y}%">
+      html += `<div class="pitch-dot ${cls}" data-pos="${key}" style="left:${pos.x}%;top:${pos.y}%">
         <img class="dot-photo" src="${photo}" alt="${name}" onerror="this.style.background='#ddd'">
         <div class="dot-name">${name}</div>
       </div>`;
