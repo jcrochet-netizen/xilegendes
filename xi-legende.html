@@ -236,7 +236,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
    CONFIG
    ═══════════════════════════════════════════════════════════════════ */
 const SHARE_TEXT = "Voici mon 11 de légende - Equipe de France 🇫🇷  Vous en pensez quoi ? Fais le tiens ici :";
-const SHARE_URL  = window.location.href;
+
+/* Get the URL of the page where this widget is embedded (handles iframe embeds) */
+function getShareUrl() {
+  // If embedded in an iframe, the parent page URL is what we want to share
+  try {
+    if (window.top && window.top !== window.self && window.top.location.href) {
+      return window.top.location.href;
+    }
+  } catch (e) {
+    // Cross-origin iframe: fallback to document.referrer (URL of the parent page)
+    if (document.referrer) return document.referrer;
+  }
+  return window.location.href;
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    PLAYER DATA (replace photo URLs with real images)
@@ -681,7 +694,7 @@ async function downloadImage() {
 
 function shareOn(platform) {
   const text = encodeURIComponent(SHARE_TEXT);
-  const url = encodeURIComponent(SHARE_URL);
+  const url = encodeURIComponent(getShareUrl());
   const urls = {
     x: `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`,
