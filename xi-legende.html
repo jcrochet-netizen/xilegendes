@@ -98,7 +98,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .pitch-dot .dot-name{font-size:.65rem;font-weight:600;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9);margin-top:3px;white-space:nowrap;max-width:86px;overflow:hidden;text-overflow:ellipsis}
 .pitch-dot[data-pos="gk"] .dot-name{margin-top:-2px}
 /* Empty slot */
-.pitch-dot.empty .dot-photo{border:2px dashed rgba(255,255,255,.4);background:rgba(255,255,255,.08)}
+.pitch-dot.empty .dot-photo{border:2px dashed rgba(255,255,255,.4);background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:26px;line-height:1;color:rgba(255,255,255,.7)}
 .pitch-dot.empty .dot-name{color:rgba(255,255,255,.4)}
 
 /* Coach area */
@@ -561,10 +561,12 @@ function renderPitch() {
     slots.forEach((pos, i) => {
       const player = state[key][i] || null;
       const cls = player ? "" : "empty";
-      const photo = player ? player.photo : "";
       const name = player ? player.name.split(" ").pop() : posLabel(key);
+      const dotContent = player
+        ? `<img class="dot-photo" src="${player.photo}" alt="${name}" onerror="this.style.background='#ddd'">`
+        : `<div class="dot-photo">⚽</div>`;
       html += `<div class="pitch-dot ${cls}" data-pos="${key}" style="left:${pos.x}%;top:${pos.y}%">
-        <img class="dot-photo" src="${photo}" alt="${name}" onerror="this.style.background='#ddd'">
+        ${dotContent}
         <div class="dot-name">${name}</div>
       </div>`;
     });
