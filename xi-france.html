@@ -623,7 +623,11 @@ function renderPitch() {
       const cls = player ? "" : "empty";
       const name = player ? player.name.split(" ").pop() : posLabel(key);
       const dotContent = player
-        ? `<div class="dot-photo" role="img" aria-label="${name}" style="background-image:url('${photoUrl(player.photo)}')"></div>`
+        ? (() => {
+            const cx = ((player.cropX ?? 0.5) * 100).toFixed(0);
+            const cy = ((player.cropY ?? 0.5) * 100).toFixed(0);
+            return `<div class="dot-photo" role="img" aria-label="${name}" style="background-image:url('${photoUrl(player.photo)}');background-position:${cx}% ${cy}%"></div>`;
+          })()
         : `<div class="dot-photo">⚽</div>`;
       html += `<div class="pitch-dot ${cls}" data-pos="${key}" style="left:${pos.x}%;top:${pos.y}%">
         ${dotContent}
@@ -692,7 +696,7 @@ async function fetchAsDataURL(url) {
    éviter les soucis de border-radius/border avec html2canvas. */
 const photoCache = {};
 
-function renderCircularPhoto(url, size) {
+function renderCircularPhoto(url, size, cropY = 0.5, cropX = 0.5) {
   return new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
@@ -711,7 +715,7 @@ function renderCircularPhoto(url, size) {
       ctx.arc(size / 2, size / 2, size / 2, 0, 2 * Math.PI);
       ctx.fill();
 
-      // Clip au cercle intérieur, dessine la photo cropée centrée (cover)
+      // Clip au cercle intérieur, dessine la photo cropée selon cropX/cropY (0=haut/gauche, 0.5=centre, 1=bas/droite)
       ctx.save();
       ctx.beginPath();
       ctx.arc(size / 2, size / 2, size / 2 - borderPx, 0, 2 * Math.PI);
@@ -719,8 +723,10 @@ function renderCircularPhoto(url, size) {
 
       const sw = img.naturalWidth, sh = img.naturalHeight;
       const ssize = Math.min(sw, sh);
-      const sx = (sw - ssize) / 2;
-      const sy = (sh - ssize) / 2;
+      const maxSx = sw - ssize;
+      const maxSy = sh - ssize;
+      const sx = Math.max(0, Math.min(maxSx, maxSx * cropX));
+      const sy = Math.max(0, Math.min(maxSy, maxSy * cropY));
       ctx.drawImage(img, sx, sy, ssize, ssize, 0, 0, size, size);
       ctx.restore();
 
@@ -736,7 +742,7 @@ async function ensureSelectedPhotosCached() {
   await Promise.all(all.map(async p => {
     if (!photoCache[p.photo]) {
       // 360px = 54px display × scale 4 + headroom — html2canvas a une source nette
-      photoCache[p.photo] = await renderCircularPhoto(photoUrl(p.photo), 360);
+      photoCache[p.photo] = await renderCircularPhoto(photoUrl(p.photo), 360, p.cropY, p.cropX);
     }
   }));
 }
