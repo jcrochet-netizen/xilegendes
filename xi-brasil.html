@@ -356,8 +356,11 @@ function photoUrl(filename) {
   return `${COUNTRY.photoFolder}/${encodeURIComponent(filename)}`;
 }
 
-/* ── URL de la page parente (pour le partage social) ── */
+/* ── URL de la page parente + auto-resize iframe (postMessage) ── */
+let _parentUrl = null;
+
 function getShareUrl() {
+  if (_parentUrl) return _parentUrl;
   try {
     if (window.top && window.top !== window.self && window.top.location.href) {
       return window.top.location.href;
@@ -366,6 +369,26 @@ function getShareUrl() {
     if (document.referrer) return document.referrer;
   }
   return window.location.href;
+}
+
+window.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'xilegende-url' && e.data.url) {
+    _parentUrl = e.data.url;
+  }
+});
+
+function setupAutoResize() {
+  if (window.parent === window) return;
+  const postHeight = () => {
+    const h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+    window.parent.postMessage({ type: 'xilegende-resize', height: h }, '*');
+  };
+  postHeight();
+  window.addEventListener('resize', postHeight);
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(postHeight).observe(document.body);
+  }
+  window.parent.postMessage({ type: 'xilegende-getUrl' }, '*');
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -861,6 +884,7 @@ function shareOn(platform) {
 
 /* ── Start ── */
 init();
+setupAutoResize();
 </script>
 </body>
 </html>
