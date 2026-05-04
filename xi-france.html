@@ -622,7 +622,7 @@ function renderPitch() {
       const cls = player ? "" : "empty";
       const name = player ? player.name.split(" ").pop() : posLabel(key);
       const dotContent = player
-        ? `<div class="dot-photo" role="img" aria-label="${name}" style="background-image:url('${photoUrl(player.photo)}')"></div>`
+        ? `<div class="dot-photo" role="img" aria-label="${name}" style="background-image:url('${photoCache[player.photo] || photoUrl(player.photo)}')"></div>`
         : `<div class="dot-photo">⚽</div>`;
       html += `<div class="pitch-dot ${cls}" data-pos="${key}" style="left:${pos.x}%;top:${pos.y}%">
         ${dotContent}
@@ -685,8 +685,48 @@ async function fetchAsDataURL(url) {
   });
 }
 
+/* Photo cache : data URLs des photos pré-cropées (centered square, haute qualité)
+   Évite le downscaling pixellisé de html2canvas. */
+const photoCache = {};
+
+function renderCircularPhoto(url, size) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      const sw = img.naturalWidth, sh = img.naturalHeight;
+      const ssize = Math.min(sw, sh);
+      const sx = (sw - ssize) / 2;
+      const sy = (sh - ssize) / 2;
+      ctx.drawImage(img, sx, sy, ssize, ssize, 0, 0, size, size);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => resolve(url); // fallback to original
+    img.src = url;
+  });
+}
+
+async function ensureSelectedPhotosCached() {
+  const all = [...state.gk, ...state.def, ...state.mid, ...state.att];
+  await Promise.all(all.map(async p => {
+    if (!photoCache[p.photo]) {
+      photoCache[p.photo] = await renderCircularPhoto(photoUrl(p.photo), 220);
+    }
+  }));
+}
+
 async function generateImage() {
   const pitchEl = document.getElementById("pitchContainer");
+
+  // Pré-traitement des photos sélectionnées (crop centré + downscale qualité)
+  await ensureSelectedPhotosCached();
+  renderPitch(); // re-render avec les photos en data URL
+  await new Promise(r => requestAnimationFrame(r));
 
   const imgs = Array.from(pitchEl.querySelectorAll('img'));
   const logoImg = pitchEl.querySelector('.pitch-brand img');
@@ -702,7 +742,7 @@ async function generateImage() {
 
   const canvas = await html2canvas(pitchEl, {
     backgroundColor: "#f5f5f5",
-    scale: 2,
+    scale: 3,
     useCORS: true,
     allowTaint: true,
     logging: false,
