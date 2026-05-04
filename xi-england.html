@@ -87,10 +87,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* Player dots on pitch */
 .pitch-dot{position:absolute;transform:translate(-50%,-50%);text-align:center;width:72px;transition:all .4s ease}
-.pitch-dot .dot-photo{width:54px;height:54px;border-radius:50%;border:2px solid #fff;object-fit:cover;background:#ddd;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.pitch-dot .dot-photo{width:54px;height:54px;border-radius:50%;border:2px solid #fff;background:#ddd center/cover no-repeat;box-shadow:0 2px 8px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:26px;line-height:1;color:rgba(255,255,255,.7)}
 .pitch-dot .dot-name{font-size:.65rem;font-weight:600;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9);margin-top:3px;white-space:nowrap;max-width:86px;overflow:hidden;text-overflow:ellipsis}
 .pitch-dot[data-pos="gk"] .dot-name{margin-top:-2px}
-.pitch-dot.empty .dot-photo{border:2px dashed rgba(255,255,255,.4);background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:26px;line-height:1;color:rgba(255,255,255,.7)}
+.pitch-dot.empty .dot-photo{border:2px dashed rgba(255,255,255,.4);background:rgba(255,255,255,.08)}
 .pitch-dot.empty .dot-name{color:rgba(255,255,255,.4)}
 
 .pitch-brand{text-align:center;padding:10px 0 0}
@@ -630,7 +630,7 @@ function renderPitch() {
       const cls = player ? "" : "empty";
       const name = player ? player.name.split(" ").pop() : posLabel(key);
       const dotContent = player
-        ? `<img class="dot-photo" src="${photoUrl(player.photo)}" alt="${name}" onerror="this.style.background='#ddd'">`
+        ? `<div class="dot-photo" role="img" aria-label="${name}" style="background-image:url('${photoUrl(player.photo)}')"></div>`
         : `<div class="dot-photo">⚽</div>`;
       html += `<div class="pitch-dot ${cls}" data-pos="${key}" style="left:${pos.x}%;top:${pos.y}%">
         ${dotContent}
