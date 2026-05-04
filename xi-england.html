@@ -17,9 +17,9 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.4}
 
 /* ── Widget Container ───────────────────────────────────────────── */
-#xi-widget{display:flex;gap:24px;width:100%;max-width:1100px;margin:0 auto;padding:20px;min-height:100vh;align-items:flex-start}
-.selector-panel{flex:1;min-width:0}
-.pitch-panel{width:340px;flex-shrink:0;position:sticky;top:20px}
+#xi-widget{display:flex;flex-direction:column;gap:24px;width:100%;max-width:720px;margin:0 auto;padding:20px;min-height:100vh}
+.selector-panel{width:100%;min-width:0}
+.pitch-panel{width:100%;max-width:400px;margin:0 auto}
 
 /* ── Header ─────────────────────────────────────────────────────── */
 .widget-header{text-align:center;margin-bottom:24px}
@@ -110,14 +110,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .share-btn.dl{background:var(--gold);color:#fff;width:100%;padding:14px;font-size:.9rem}
 
 /* ── Responsive ─────────────────────────────────────────────────── */
-@media(max-width:900px){
-  #xi-widget{flex-direction:column-reverse;padding:12px}
-  .pitch-panel{width:100%;position:static;margin-bottom:16px}
-  .pitch{padding-bottom:120%}
-  .player-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
-}
 @media(max-width:600px){
-  .player-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+  #xi-widget{padding:12px;gap:16px}
+  .pitch{padding-bottom:120%}
+  .player-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
   .player-card{padding:8px;gap:8px}
   .player-card .photo{width:36px;height:36px}
   .player-card .name{font-size:.7rem}
@@ -127,7 +123,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 @media(max-width:400px){
   #xi-widget{padding:8px}
   .stepper-item{font-size:.55rem;padding:6px 2px;min-width:50px}
-  .player-grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px}
+  .player-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}
   .player-card .photo{width:32px;height:32px}
 }
 </style>
