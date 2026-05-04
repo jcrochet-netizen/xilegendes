@@ -514,8 +514,10 @@ function renderPlayerGrid(pos, players) {
     const parts = p.name.split(' ');
     const lastName = parts.pop();
     const firstName = parts.join(' ');
+    const cx = ((p.cropX ?? 0.5) * 100).toFixed(0);
+    const cy = ((p.cropY ?? 0.5) * 100).toFixed(0);
     return `<div class="player-card" data-id="${p.id}" onclick="selectPlayer('${pos}',${p.id})">
-      <img class="photo" src="${photoUrl(p.photo)}" alt="${p.name}" loading="lazy">
+      <img class="photo" src="${photoUrl(p.photo)}" alt="${p.name}" loading="lazy" style="object-position:${cx}% ${cy}%">
       <div class="info"><div class="name"><span>${firstName}</span><span>${lastName}</span></div></div>
       <div class="check">✓</div>
       ${dualBadge}
