@@ -87,7 +87,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* Player dots on pitch */
 .pitch-dot{position:absolute;transform:translate(-50%,-50%);text-align:center;width:72px;transition:all .4s ease}
-.pitch-dot .dot-photo{width:54px;height:54px;border-radius:50%;border:2px solid #fff;background:#ddd center/cover no-repeat;box-shadow:0 2px 8px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:26px;line-height:1;color:rgba(255,255,255,.7)}
+.pitch-dot .dot-photo{width:54px;height:54px;border-radius:50%;border:2px solid #fff;background:#ddd center/cover no-repeat;box-shadow:0 2px 8px rgba(0,0,0,.5);display:inline-flex;align-items:center;justify-content:center;font-size:26px;line-height:1;color:rgba(255,255,255,.7);vertical-align:middle}
+.pitch-dot .capture-img{display:block;width:54px;height:54px;border:none;border-radius:0;background:none;box-shadow:none;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));margin:0 auto}
 .pitch-dot .dot-name{font-size:.65rem;font-weight:600;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9);margin-top:3px;white-space:nowrap;max-width:86px;overflow:hidden;text-overflow:ellipsis}
 .pitch-dot[data-pos="gk"] .dot-name{margin-top:-2px}
 .pitch-dot.empty .dot-photo{border:2px dashed rgba(255,255,255,.4);background:rgba(255,255,255,.08)}
@@ -622,7 +623,7 @@ function renderPitch() {
       const cls = player ? "" : "empty";
       const name = player ? player.name.split(" ").pop() : posLabel(key);
       const dotContent = player
-        ? `<div class="dot-photo" role="img" aria-label="${name}" style="background-image:url('${photoCache[player.photo] || photoUrl(player.photo)}')"></div>`
+        ? `<div class="dot-photo" role="img" aria-label="${name}" style="background-image:url('${photoUrl(player.photo)}')"></div>`
         : `<div class="dot-photo">⚽</div>`;
       html += `<div class="pitch-dot ${cls}" data-pos="${key}" style="left:${pos.x}%;top:${pos.y}%">
         ${dotContent}
@@ -685,8 +686,10 @@ async function fetchAsDataURL(url) {
   });
 }
 
-/* Photo cache : data URLs des photos pré-cropées (centered square, haute qualité)
-   Évite le downscaling pixellisé de html2canvas. */
+/* Photo cache : data URLs des photos pré-rendues circulaires avec bordure blanche.
+   Le rendu Canvas natif du navigateur est de bien meilleure qualité que le
+   downsampling de html2canvas. On bake aussi la bordure dans l'image pour
+   éviter les soucis de border-radius/border avec html2canvas. */
 const photoCache = {};
 
 function renderCircularPhoto(url, size) {
@@ -699,11 +702,28 @@ function renderCircularPhoto(url, size) {
       const ctx = canvas.getContext("2d");
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
+
+      const borderPx = Math.max(4, Math.round(size * 2 / 54)); // border proportionnelle (2px @ 54px)
+
+      // Fond blanc (deviendra la bordure visible une fois la photo clippée par-dessus)
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Clip au cercle intérieur, dessine la photo cropée centrée (cover)
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2 - borderPx, 0, 2 * Math.PI);
+      ctx.clip();
+
       const sw = img.naturalWidth, sh = img.naturalHeight;
       const ssize = Math.min(sw, sh);
       const sx = (sw - ssize) / 2;
       const sy = (sh - ssize) / 2;
       ctx.drawImage(img, sx, sy, ssize, ssize, 0, 0, size, size);
+      ctx.restore();
+
       resolve(canvas.toDataURL("image/png"));
     };
     img.onerror = () => resolve(url); // fallback to original
@@ -715,23 +735,57 @@ async function ensureSelectedPhotosCached() {
   const all = [...state.gk, ...state.def, ...state.mid, ...state.att];
   await Promise.all(all.map(async p => {
     if (!photoCache[p.photo]) {
-      photoCache[p.photo] = await renderCircularPhoto(photoUrl(p.photo), 220);
+      // 360px = 54px display × scale 4 + headroom — html2canvas a une source nette
+      photoCache[p.photo] = await renderCircularPhoto(photoUrl(p.photo), 360);
     }
   }));
 }
 
+/* Rend les pitch dots avec des <img> au lieu de divs background-image.
+   Utilisé uniquement pour le snapshot html2canvas (qui rend les <img> mieux que les bg-image). */
+function renderPitchHTMLForCapture() {
+  if (!state.formation) return "";
+  const f = FORMATIONS[state.formation];
+  let html = "";
+  const posMap = [
+    { key: "gk",  slots: f.positions.gk },
+    { key: "def", slots: f.positions.def },
+    { key: "mid", slots: f.positions.mid },
+    { key: "att", slots: f.positions.att },
+  ];
+  for (const { key, slots } of posMap) {
+    slots.forEach((pos, i) => {
+      const player = state[key][i] || null;
+      const cls = player ? "" : "empty";
+      const name = player ? player.name.split(" ").pop() : posLabel(key);
+      const dotContent = player
+        ? `<img class="dot-photo capture-img" src="${photoCache[player.photo] || photoUrl(player.photo)}" alt="${name}">`
+        : `<div class="dot-photo">⚽</div>`;
+      html += `<div class="pitch-dot ${cls}" data-pos="${key}" style="left:${pos.x}%;top:${pos.y}%">
+        ${dotContent}
+        <div class="dot-name">${name}</div>
+      </div>`;
+    });
+  }
+  return html;
+}
+
 async function generateImage() {
   const pitchEl = document.getElementById("pitchContainer");
+  const pitchPlayers = document.getElementById("pitchPlayers");
 
-  // Pré-traitement des photos sélectionnées (crop centré + downscale qualité)
+  // Pré-traitement des photos sélectionnées (cercle + bordure baked-in, qualité Canvas natif)
   await ensureSelectedPhotosCached();
-  renderPitch(); // re-render avec les photos en data URL
+
+  // Sauvegarde l'HTML actuel et le remplace par la version optimisée pour capture
+  const originalHTML = pitchPlayers.innerHTML;
+  pitchPlayers.innerHTML = renderPitchHTMLForCapture();
   await new Promise(r => requestAnimationFrame(r));
 
+  // Préload du logo en data URL (déjà fait avant)
   const imgs = Array.from(pitchEl.querySelectorAll('img'));
   const logoImg = pitchEl.querySelector('.pitch-brand img');
   const originalLogoSrc = logoImg ? logoImg.getAttribute('src') : null;
-
   if (logoImg && originalLogoSrc && !originalLogoSrc.startsWith('data:')) {
     try {
       const dataUrl = await fetchAsDataURL(originalLogoSrc);
@@ -740,25 +794,30 @@ async function generateImage() {
   }
   await Promise.all(imgs.map(waitForImage));
 
-  const canvas = await html2canvas(pitchEl, {
-    backgroundColor: "#f5f5f5",
-    scale: 3,
-    useCORS: true,
-    allowTaint: true,
-    logging: false,
-    imageTimeout: 15000
-  });
+  try {
+    const canvas = await html2canvas(pitchEl, {
+      backgroundColor: "#f5f5f5",
+      scale: 4,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      imageTimeout: 15000
+    });
 
-  return new Promise((resolve, reject) => {
-    try {
-      canvas.toBlob(b => {
-        if (b) resolve(b);
-        else reject(new Error("Canvas non exportable (images cross-origin sans CORS)."));
-      }, "image/png");
-    } catch (err) {
-      reject(err);
-    }
-  });
+    return await new Promise((resolve, reject) => {
+      try {
+        canvas.toBlob(b => {
+          if (b) resolve(b);
+          else reject(new Error("Canvas non exportable (images cross-origin sans CORS)."));
+        }, "image/png");
+      } catch (err) {
+        reject(err);
+      }
+    });
+  } finally {
+    // Toujours restaurer le rendu live, même si erreur
+    pitchPlayers.innerHTML = originalHTML;
+  }
 }
 
 async function downloadImage() {
