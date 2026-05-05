@@ -271,7 +271,7 @@ const PLAYERS = {
     { id: 2, name: "Sepp Maier",        photo: "maier.jpg" },
     { id: 3, name: "Manuel Neuer",      photo: "neuer.jpg" },
     { id: 4, name: "Toni Schumacher",   photo: "schumacher.jpg" },
-    { id: 5, name: "Hans Tilkowski",    photo: "Tilkowski.jpg" },
+    { id: 5, name: "Hans Tilkowski",    photo: "tilkowski.jpg" },
   ],
   def: [
     { id: 20, name: "Franz Beckenbauer",      photo: "beckenbauer.jpg" },
@@ -314,8 +314,8 @@ const PLAYERS = {
     { id: 75, name: "Miroslav Klose",         photo: "klose.jpg" },
     { id: 76, name: "Pierre Littbarski",      photo: "littbarski.jpg" },
     { id: 77, name: "Max Morlock",            photo: "morlock.jpg" },
-    { id: 78, name: "Gerd Müller",            photo: "gerdmuller.jpg" },
-    { id: 79, name: "Thomas Müller",          photo: "thomasmuller.jpg" },
+    { id: 78, name: "Gerd Müller",            photo: "gerd muller.jpg" },
+    { id: 79, name: "Thomas Müller",          photo: "thomas muller.jpg" },
     { id: 80, name: "Lukas Podolski",         photo: "podolski.jpg" },
     { id: 81, name: "Karl-Heinz Rummenigge",  photo: "rummenigge.jpg" },
     { id: 82, name: "Uwe Seeler",             photo: "seeler.jpg" },
@@ -340,7 +340,7 @@ function applyI18n() {
 
 /* ── Photo URL helper ── */
 function photoUrl(filename) {
-  return `${COUNTRY.photoFolder}/${filename}`;
+  return `${COUNTRY.photoFolder}/${encodeURIComponent(filename)}`;
 }
 
 /* ── URL de la page parente + auto-resize iframe (postMessage) ── */
