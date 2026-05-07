@@ -386,7 +386,10 @@ window.addEventListener('message', (e) => {
 function setupAutoResize() {
   if (window.parent === window) return;
   const postHeight = () => {
-    const h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+    const widget = document.getElementById('xi-widget');
+    const h = widget
+      ? Math.ceil(widget.getBoundingClientRect().bottom + window.scrollY)
+      : Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
     window.parent.postMessage({ type: 'xilegende-resize', height: h }, '*');
     window.parent.postMessage({ type: 'wc2026-resize', height: h }, '*');
   };
