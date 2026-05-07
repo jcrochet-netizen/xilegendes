@@ -372,7 +372,7 @@ function getShareUrl() {
 }
 
 window.addEventListener('message', (e) => {
-  if (e.data && e.data.type === 'xilegende-url' && e.data.url) {
+  if (e.data && (e.data.type === 'xilegende-url' || e.data.type === 'wc2026-url') && e.data.url) {
     _parentUrl = e.data.url;
   }
 });
@@ -382,6 +382,7 @@ function setupAutoResize() {
   const postHeight = () => {
     const h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
     window.parent.postMessage({ type: 'xilegende-resize', height: h }, '*');
+    window.parent.postMessage({ type: 'wc2026-resize', height: h }, '*');
   };
   postHeight();
   window.addEventListener('resize', postHeight);
@@ -389,6 +390,7 @@ function setupAutoResize() {
     new ResizeObserver(postHeight).observe(document.body);
   }
   window.parent.postMessage({ type: 'xilegende-getUrl' }, '*');
+  window.parent.postMessage({ type: 'wc2026-getUrl' }, '*');
 }
 
 /* ═══════════════════════════════════════════════════════════════════
