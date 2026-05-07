@@ -64,7 +64,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .player-card .name span{display:block;overflow-wrap:anywhere}
 .player-card .check{position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:var(--gold);color:#fff;display:none;align-items:center;justify-content:center;font-size:.7rem;font-weight:700}
 .player-card.selected .check{display:flex}
-.player-card .dual-badge{position:absolute;bottom:4px;right:4px;background:linear-gradient(135deg,#e30613,#b8050f);color:#fff;font-size:.5rem;font-weight:700;padding:2px 5px;border-radius:4px;letter-spacing:.3px;text-transform:uppercase;line-height:1.2}
+.player-card .dual-badge{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(135deg,#e30613,#b8050f);color:#fff;font-size:.5rem;font-weight:700;padding:3px 0;text-align:center;letter-spacing:.5px;text-transform:uppercase;line-height:1.2}
+.player-card:has(.dual-badge){padding-bottom:18px}
 
 /* ── Reset Button ───────────────────────────────────────────────── */
 .reset-btn{display:block;width:100%;margin-top:10px;padding:10px;background:transparent;color:var(--text-muted);border:1px solid #ccc;border-radius:var(--radius);font-size:.8rem;cursor:pointer;transition:all .2s}
