@@ -388,9 +388,10 @@ function setupAutoResize() {
   let _lastH = 0;
   const postHeight = () => {
     const widget = document.getElementById('xi-widget');
-    const h = widget
+    const h = (widget
       ? Math.ceil(widget.getBoundingClientRect().bottom + window.scrollY)
-      : Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+      : Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)
+    ) + 30; // buffer de sécurité pour éviter toute coupure
     if (h === _lastH) return;
     _lastH = h;
     window.parent.postMessage({ type: 'xilegende-resize', height: h }, parentOrigin);
