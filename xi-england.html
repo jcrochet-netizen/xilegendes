@@ -662,7 +662,7 @@ function renderPitch() {
 
   for (const { key, slots } of posMap) {
     slots.forEach((pos, i) => {
-      const player = state[key][i] || null;
+      const player = state[key][slots.length - 1 - i] || null;
       const cls = player ? "" : "empty";
       const name = player ? player.name.split(" ").pop() : posLabel(key);
       const dotContent = player
@@ -802,7 +802,7 @@ function renderPitchHTMLForCapture() {
   ];
   for (const { key, slots } of posMap) {
     slots.forEach((pos, i) => {
-      const player = state[key][i] || null;
+      const player = state[key][slots.length - 1 - i] || null;
       const cls = player ? "" : "empty";
       const name = player ? player.name.split(" ").pop() : posLabel(key);
       const dotContent = player
