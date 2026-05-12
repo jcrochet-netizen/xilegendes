@@ -376,23 +376,29 @@ window.addEventListener('message', (e) => {
   }
 });
 
+function getParentOrigin() {
+  try { if (document.referrer) return new URL(document.referrer).origin; } catch (e) {}
+  return '*';
+}
+
 function setupAutoResize() {
   if (window.parent === window) return; // pas dans un iframe
+  const parentOrigin = getParentOrigin();
   const postHeight = () => {
     const widget = document.getElementById('xi-widget');
     const h = widget
       ? Math.ceil(widget.getBoundingClientRect().bottom + window.scrollY)
       : Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
-    window.parent.postMessage({ type: 'xilegende-resize', height: h }, '*');
-    window.parent.postMessage({ type: 'wc2026-resize', height: h }, '*');
+    window.parent.postMessage({ type: 'xilegende-resize', height: h }, parentOrigin);
+    window.parent.postMessage({ type: 'wc2026-resize', height: h }, parentOrigin);
   };
   postHeight();
   window.addEventListener('resize', postHeight);
   if (typeof ResizeObserver !== 'undefined') {
     new ResizeObserver(postHeight).observe(document.body);
   }
-  window.parent.postMessage({ type: 'xilegende-getUrl' }, '*');
-  window.parent.postMessage({ type: 'wc2026-getUrl' }, '*');
+  window.parent.postMessage({ type: 'xilegende-getUrl' }, parentOrigin);
+  window.parent.postMessage({ type: 'wc2026-getUrl' }, parentOrigin);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
