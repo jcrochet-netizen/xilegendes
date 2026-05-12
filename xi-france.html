@@ -384,19 +384,25 @@ function getParentOrigin() {
 function setupAutoResize() {
   if (window.parent === window) return; // pas dans un iframe
   const parentOrigin = getParentOrigin();
+  let _lastH = 0;
   const postHeight = () => {
     const widget = document.getElementById('xi-widget');
     const h = widget
       ? Math.ceil(widget.getBoundingClientRect().bottom + window.scrollY)
       : Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+    if (h === _lastH) return; // évite les posts inutiles
+    _lastH = h;
     window.parent.postMessage({ type: 'xilegende-resize', height: h }, parentOrigin);
     window.parent.postMessage({ type: 'wc2026-resize', height: h }, parentOrigin);
   };
   postHeight();
   window.addEventListener('resize', postHeight);
+  window.addEventListener('load', postHeight);
   if (typeof ResizeObserver !== 'undefined') {
     new ResizeObserver(postHeight).observe(document.body);
   }
+  // Safety net : re-post après chargement async (images, layout shifts)
+  [100, 500, 1500, 3000].forEach(d => setTimeout(postHeight, d));
   window.parent.postMessage({ type: 'xilegende-getUrl' }, parentOrigin);
   window.parent.postMessage({ type: 'wc2026-getUrl' }, parentOrigin);
 }
